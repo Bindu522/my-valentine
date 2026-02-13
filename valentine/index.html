@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Top Secret Love Letter ❤️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --primary-pink: #ffc2d1; --dark-pink: #fb6f92; --cream: #fff0f3; }
+
+        body {
+            background-color: var(--cream);
+            font-family: 'Quicksand', sans-serif;
+            margin: 0; padding: 0;
+            overflow: hidden; /* Locked until password entered */
+            text-align: center;
+        }
+
+        /* --- PASSWORD GATE --- */
+        #password-gate {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--primary-pink);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 2000;
+        }
+
+        .pass-box {
+            background: white; padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 80%; max-width: 300px;
+        }
+
+        input {
+            width: 100%; padding: 12px; margin: 15px 0;
+            border: 2px solid var(--primary-pink); border-radius: 10px;
+            box-sizing: border-box; text-align: center; font-size: 1rem;
+        }
+
+        .pass-btn {
+            background: var(--dark-pink); color: white; border: none;
+            padding: 10px 25px; border-radius: 50px; cursor: pointer; font-weight: bold;
+        }
+
+        /* --- ENTRANCE --- */
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--primary-pink);
+            display: none; /* Hidden until password correct */
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000; transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        .container { opacity: 0; transition: opacity 1s; width: 100%; box-sizing: border-box; padding-bottom: 50px; display: none; }
+        
+        /* Rest of your beautiful styling */
+        h1 { font-family: 'Dancing Script'; font-size: 3.5rem; color: var(--dark-pink); }
+        .photo-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .wall-item, .valentine { background: white; padding: 12px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .valentine { border: 3px solid var(--dark-pink); transform: rotate(-1deg); }
+        .wall-item img, .valentine img { width: 100%; height: 280px; object-fit: cover; border-radius: 15px; }
+        .caption-box { margin-top: 12px; font-weight: 700; color: #5c0d12; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        /* Timeline & Game CSS (Same as before) */
+        .timeline { max-width: 800px; margin: 80px auto; position: relative; padding: 20px; }
+        .timeline::after { content: ''; position: absolute; width: 4px; background: var(--primary-pink); top: 0; bottom: 0; left: 50%; margin-left: -2px; }
+        .milestone { padding: 10px 40px; position: relative; width: 50%; box-sizing: border-box; }
+        .milestone.left { left: 0; text-align: right; }
+        .milestone.right { left: 50%; text-align: left; }
+        .milestone::after { content: '❤️'; position: absolute; right: -13px; top: 15px; background: var(--cream); font-size: 18px; z-index: 1; }
+        .milestone.right::after { left: -13px; }
+        
+        .game-section { margin: 60px 20px; padding: 40px 20px; background: white; border-radius: 35px; position: relative; min-height: 400px; box-shadow: 0 10px 30px rgba(251, 111, 146, 0.2); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .btn-wrap { margin-top: 30px; position: relative; width: 100%; height: 150px; }
+        #yesBtn { background: #4CAF50; color: white; padding: 15px 45px; border-radius: 50px; border: none; font-size: 1.6rem; cursor: pointer; font-weight: bold; }
+        #noBtn { position: absolute; background: #ff4d4d; color: white; padding: 10px 25px; border-radius: 50px; border: none; cursor: pointer; transition: 0.1s; touch-action: none; font-weight: bold; }
+        #finalMessage { display: none; padding: 100px 20px; }
+        .emoji-pulse { display: inline-block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+        
+        @media (max-width: 600px) {
+            .photo-wall { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .timeline::after { left: 20px; }
+            .milestone { width: 100%; text-align: left !important; padding-left: 50px; }
+            .milestone::after { left: 8px !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="password-gate">
+        <div class="pass-box">
+            <h2 style="color: var(--dark-pink); margin-top: 0;">Identity Check 🕵️‍♂️</h2>
+            <p style="font-size: 0.9rem;">Enter our secret date to enter:</p>
+            <input type="password" id="passwordInput" placeholder="Password...">
+            <button class="pass-btn" onclick="checkPassword()">Unlock My Heart</button>
+            <p id="error-msg" style="color: red; font-size: 0.8rem; margin-top: 10px; display: none;">Oops! That's not it. Try again! ❤️</p>
+        </div>
+    </div>
+
+    <div id="overlay" onclick="openLetter()">
+        <div style="font-size: 100px; cursor: pointer;">💌</div>
+        <p style="color: white; font-weight: bold; font-size: 1.4rem; margin-top: 20px;">Identity Verified!</p>
+        <p style="color: white; opacity: 0.9;">(Tap to open the letter)</p>
+    </div>
+
+    <div class="container" id="mainContent">
+        <header>
+            <h1>Happy Valentine's Day!</h1>
+            <p>I put our favorite memories in one place. ❤️</p>
+        </header>
+
+        <div class="photo-wall">
+            <div class="valentine"><img src="1.jpeg"><div class="caption-box">Where it began <span class="emoji-pulse">🌱</span></div></div>
+            <div class="wall-item"><img src="3.jpeg"><div class="caption-box">Date night ✨</div></div>
+            <div class="wall-item"><img src="5.jpeg"><div class="caption-box">That smile 🫠</div></div>
+            <div class="wall-item"><img src="2.jpeg"><div class="caption-box">Adventures 🗺️</div></div>
+            <div class="wall-item"><img src="4.jpeg"><div class="caption-box">My world 🌍</div></div>
+            <div class="wall-item"><img src="6.jpeg"><div class="caption-box">My Man 🤴</div></div>
+            <div class="wall-item"><img src="7.jpeg"><div class="caption-box">Mine 🔐</div></div>
+            <div class="wall-item"><img src="8.jpeg"><div class="caption-box">Feed me! 🍕</div></div>
+        </div>
+
+        <h2 style="font-family: 'Dancing Script'; font-size: 3rem; color: var(--dark-pink); margin-top: 80px;">Our Journey</h2>
+        <div class="timeline">
+            <div class="milestone left"><h3>The First Hello</h3><p>The day my life got 1000% better.</p></div>
+            <div class="milestone right"><h3>First Date</h3><p>I was so nervous, but you were perfect.</p></div>
+            <div class="milestone left"><h3>Official</h3><p>The best decision I ever made.</p></div>
+            <div class="milestone right"><h3>Today</h3><p>Still completely obsessed with you.</p></div>
+        </div>
+
+        <div class="game-section" id="gameBody">
+            <h2 style="font-family: 'Dancing Script'; font-size: 2.8rem; color: var(--dark-pink);">Will you be my Valentine? 🥺</h2>
+            <div class="btn-wrap">
+                <button id="yesBtn" onclick="celebrate()">YES!</button>
+                <button id="noBtn" onmouseover="moveNoButton()" onclick="moveNoButton()" ontouchstart="moveNoButton()">No</button>
+            </div>
+            <p id="silly-msg" style="font-weight: bold; color: var(--dark-pink); height: 20px;"></p>
+        </div>
+
+        <div id="finalMessage">
+            <h1 style="color: #4CAF50; font-family: 'Dancing Script'; font-size: 5rem;">YAY! ❤️</h1>
+            <p style="font-size: 1.5rem; font-weight: bold;">You're mine now! Best Valentine ever.</p>
+            <div style="font-size: 60px;">👩‍❤️‍👨🌹✨</div>
+        </div>
+    </div>
+
+    <script>
+        // CHANGE YOUR PASSWORD HERE!
+        const CORRECT_PASSWORD = "260425"; 
+
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            if(input === CORRECT_PASSWORD) {
+                document.getElementById('password-gate').style.display = 'none';
+                document.getElementById('overlay').style.display = 'flex';
+                document.body.style.overflow = 'auto';
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+
+        function openLetter() {
+            document.getElementById('overlay').style.transform = 'translateY(-100%)';
+            document.getElementById('mainContent').style.display = 'block';
+            setTimeout(() => { document.getElementById('mainContent').style.opacity = '1'; }, 100);
+        }
+
+        function moveNoButton() {
+            const noBtn = document.getElementById('noBtn');
+            const container = document.getElementById('gameBody');
+            noBtn.style.left = Math.floor(Math.random() * (container.clientWidth - 100)) + 'px';
+            noBtn.style.top = Math.floor(Math.random() * (container.clientHeight - 100)) + 'px';
+            const msgs = ["Nice try!", "Nope!", "Wrong button!", "Hahaha!"];
+            document.getElementById('silly-msg').innerText = msgs[Math.floor(Math.random()*msgs.length)];
+        }
+
+        function celebrate() {
+            confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
+            document.getElementById('gameBody').style.display = 'none';
+            document.getElementById('finalMessage').style.display = 'block';
+        }
+
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.style.position = 'fixed'; heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.top = '-20px'; heart.style.color = '#fb6f92'; heart.innerHTML = '❤️';
+            heart.style.transition = 'transform 6s linear';
+            document.body.appendChild(heart);
+            setTimeout(() => { heart.style.transform = 'translateY(110vh) rotate(360deg)'; }, 100);
+            setTimeout(() => { heart.remove(); }, 6000);
+        }
+        setInterval(createHeart, 500);
+    </script>
+</body>
+</html>
